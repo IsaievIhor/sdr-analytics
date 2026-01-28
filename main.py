@@ -54,85 +54,6 @@ filtered_df = df[
 ]
 
 st.divider()
-
-
-
-st.subheader("⚠️ Data Issues (Помилки в даних)")
-
-# --- 1. ПІДГОТОВКА ПЕРЕВІРОК (Логічні фільтри) ---
-
-# Відсутня Closing Date для закритих угод
-missing_closing_date = filtered_df[
-    (filtered_df['Stage'].isin(['Closed Won', 'Closed Lost'])) & 
-    (filtered_df['Closing Date'].isna())
-]
-
-# Пуста або занадто коротка причина програшу (менше 5 символів)
-invalid_loss_reason = filtered_df[
-    (filtered_df['Stage'] == 'Closed Lost') & 
-    ((filtered_df['Loss reason description'].isna()) | (filtered_df['Loss reason description'].astype(str).str.len() < 5))
-]
-
-# Аномалія: Виграно з бюджетом 0
-zero_budget_won = filtered_df[
-    (filtered_df['Stage'] == 'Closed Won') & 
-    (filtered_df['PPC budget USD'].isin(['0', 0, '0-0']))
-]
-
-# Помилка: Виграно без вказаного періоду підписки
-missing_subscription = filtered_df[
-    (filtered_df['Stage'] == 'Closed Won') & 
-    ((filtered_df['Subscription period'].isna()) | (filtered_df['Subscription period'].isin(['0', 0, '0-0'])))
-]
-
-# Некоректне або відсутнє джерело (Source)
-invalid_source = filtered_df[
-    (filtered_df['Source'].isna()) | 
-    (filtered_df['Source'].astype(str).str.lower().isin(['unknown', 'other', '-', 'none', '', 'nan']))
-]
-
-# --- 2. ЗБІР УСІХ ПРОБЛЕМ В ОДИН СПИСОК ---
-issues = []
-
-for _, row in missing_closing_date.iterrows():
-    issues.append({"Тип": "📅 Відсутня Closing Date", "ID/Source": row['Source'], "Stage": row['Stage'], "Країна": row['Client country']})
-
-for _, row in invalid_loss_reason.iterrows():
-    issues.append({"Тип": "💬 Пуста/коротка причина програшу", "ID/Source": row['Source'], "Stage": row['Stage'], "Країна": row['Client country']})
-
-for _, row in zero_budget_won.iterrows():
-    issues.append({"Тип": "💰 Аномалія: Win з бюджетом 0", "ID/Source": row['Source'], "Stage": row['Stage'], "Країна": row['Client country']})
-
-for _, row in missing_subscription.iterrows():
-    issues.append({"Тип": "❌ Помилка: Won без підписки", "ID/Source": row['Source'], "Stage": row['Stage'], "Країна": row['Client country']})
-
-for _, row in invalid_source.iterrows():
-    issues.append({"Тип": "📢 Некоректне джерело (Source)", "ID/Source": "Check CRM", "Stage": row['Stage'], "Країна": row['Client country']})
-
-# --- 3. ВІДОБРАЖЕННЯ РЕЗУЛЬТАТІВ ---
-
-if issues:
-    issues_df = pd.DataFrame(issues)
-    # Робимо нумерацію з 1
-    issues_df.index = issues_df.index + 1
-    
-    st.warning(f"Знайдено записів, що потребують уваги: {len(issues_df)}")
-    
-    # Виводимо таблицю. Використовуємо st.dataframe для зручного скролу та сортування
-    st.dataframe(issues_df, use_container_width=True)
-    
-    # Додаємо кнопку завантаження для менеджерів
-    csv = issues_df.to_csv(index=True).encode('utf-8-sig')
-    st.download_button(
-        label="📥 Завантажити список помилок у CSV",
-        data=csv,
-        file_name="crm_data_issues.csv",
-        mime="text/csv",
-    )
-else:
-    st.success("Проблем з валідацією даних не виявлено! Всі поля заповнені коректно. ✅")
-
-
     
 # 4. Візуалізація
 st.title("📊 SDR Analytics Dashboard")
@@ -217,6 +138,84 @@ st.divider()
 # 5. Таблиця даних (опціонально)
 with st.expander("Переглянути сирі дані"):
     st.write(filtered_df)
+
+
+st.subheader("⚠️ Data Issues (Помилки в даних)")
+
+# --- 1. ПІДГОТОВКА ПЕРЕВІРОК (Логічні фільтри) ---
+
+# Відсутня Closing Date для закритих угод
+missing_closing_date = filtered_df[
+    (filtered_df['Stage'].isin(['Closed Won', 'Closed Lost'])) & 
+    (filtered_df['Closing Date'].isna())
+]
+
+# Пуста або занадто коротка причина програшу (менше 5 символів)
+invalid_loss_reason = filtered_df[
+    (filtered_df['Stage'] == 'Closed Lost') & 
+    ((filtered_df['Loss reason description'].isna()) | (filtered_df['Loss reason description'].astype(str).str.len() < 5))
+]
+
+# Аномалія: Виграно з бюджетом 0
+zero_budget_won = filtered_df[
+    (filtered_df['Stage'] == 'Closed Won') & 
+    (filtered_df['PPC budget USD'].isin(['0', 0, '0-0']))
+]
+
+# Помилка: Виграно без вказаного періоду підписки
+missing_subscription = filtered_df[
+    (filtered_df['Stage'] == 'Closed Won') & 
+    ((filtered_df['Subscription period'].isna()) | (filtered_df['Subscription period'].isin(['0', 0, '0-0'])))
+]
+
+# Некоректне або відсутнє джерело (Source)
+invalid_source = filtered_df[
+    (filtered_df['Source'].isna()) | 
+    (filtered_df['Source'].astype(str).str.lower().isin(['unknown', 'other', '-', 'none', '', 'nan']))
+]
+
+# --- 2. ЗБІР УСІХ ПРОБЛЕМ В ОДИН СПИСОК ---
+issues = []
+
+for _, row in missing_closing_date.iterrows():
+    issues.append({"Тип": "📅 Відсутня Closing Date", "ID/Source": row['Source'], "Stage": row['Stage'], "Країна": row['Client country']})
+
+for _, row in invalid_loss_reason.iterrows():
+    issues.append({"Тип": "💬 Пуста/коротка причина програшу", "ID/Source": row['Source'], "Stage": row['Stage'], "Країна": row['Client country']})
+
+for _, row in zero_budget_won.iterrows():
+    issues.append({"Тип": "💰 Аномалія: Win з бюджетом 0", "ID/Source": row['Source'], "Stage": row['Stage'], "Країна": row['Client country']})
+
+for _, row in missing_subscription.iterrows():
+    issues.append({"Тип": "❌ Помилка: Won без підписки", "ID/Source": row['Source'], "Stage": row['Stage'], "Країна": row['Client country']})
+
+for _, row in invalid_source.iterrows():
+    issues.append({"Тип": "📢 Некоректне джерело (Source)", "ID/Source": "Check CRM", "Stage": row['Stage'], "Країна": row['Client country']})
+
+# --- 3. ВІДОБРАЖЕННЯ РЕЗУЛЬТАТІВ ---
+
+if issues:
+    issues_df = pd.DataFrame(issues)
+    # Робимо нумерацію з 1
+    issues_df.index = issues_df.index + 1
+    
+    st.warning(f"Знайдено записів, що потребують уваги: {len(issues_df)}")
+    
+    # Виводимо таблицю. Використовуємо st.dataframe для зручного скролу та сортування
+    st.dataframe(issues_df, use_container_width=True)
+    
+    # Додаємо кнопку завантаження для менеджерів
+    csv = issues_df.to_csv(index=True).encode('utf-8-sig')
+    st.download_button(
+        label="📥 Завантажити список помилок у CSV",
+        data=csv,
+        file_name="crm_data_issues.csv",
+        mime="text/csv",
+    )
+else:
+    st.success("Проблем з валідацією даних не виявлено! Всі поля заповнені коректно. ✅")
+
+
 
     
 # --- RevOps Insights Summary: ПОВНЕ ОНОВЛЕННЯ ---
@@ -362,4 +361,5 @@ if recoms:
     for r in recoms:
         st.write(r)
 else:
+
     st.write("✅ Всі ключові показники в нормі. Дані чисті, конверсія стабільна.")
