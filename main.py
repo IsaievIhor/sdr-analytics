@@ -62,9 +62,30 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Win Rate за країнами")
-    # Рахуємо Win Rate тільки для закритих угод
-    wr_country = filtered_df.dropna(subset=['Is_Won']).groupby('Client country')['Is_Won'].mean() * 100
-    fig_country = px.bar(wr_country.reset_index(), x='Client country', y='Is_Won', labels={'Is_Won':'Win Rate (%)'}, text_auto='.1f', color='Client country')
+    
+    # 1. Створюємо агреговану таблицю: рахуємо середнє (Win Rate) та кількість (Total Deals)
+    country_stats = filtered_df.dropna(subset=['Is_Won']).groupby('Client country').agg(
+        win_rate=('Is_Won', lambda x: x.mean() * 100),
+        total_deals=('Is_Won', 'count')
+    ).reset_index()
+
+    # 2. Будуємо графік, додаючи total_deals у custom_data
+    fig_country = px.bar(
+        country_stats, 
+        x='Client country', 
+        y='win_rate', 
+        labels={'win_rate': 'Win Rate (%)', 'total_deals': 'Кількість угод'},
+        text_auto='.1f', 
+        color='Client country',
+        # Додаємо кількість угод у спливаюче вікно
+        hover_data={'win_rate': ':.1f', 'total_deals': True}
+    )
+
+    # Оновлюємо вигляд підказки для кращого читання
+    fig_country.update_traces(
+        hovertemplate="<b>%{x}</b><br>Win Rate: %{y:.1f}%<br>Всього угод: %{customdata[0]}"
+    )
+
     st.plotly_chart(fig_country, use_container_width=True)
 
 with col2:
@@ -363,3 +384,4 @@ if recoms:
 else:
 
     st.write("✅ Всі ключові показники в нормі. Дані чисті, конверсія стабільна.")
+
