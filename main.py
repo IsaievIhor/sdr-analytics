@@ -160,20 +160,40 @@ st.divider()
 with st.expander("Переглянути сирі дані"):
     st.write(filtered_df)
 
-# 1. Створюємо тимчасовий датафрейм (це виправить NameError)
+# 1. Готуємо дані
 temp_df = filtered_df.copy()
 temp_df['AQL date'] = pd.to_datetime(temp_df['AQL date'], errors='coerce')
 temp_df['Closing Date'] = pd.to_datetime(temp_df['Closing Date'], errors='coerce')
 temp_df['cycle_days'] = (temp_df['Closing Date'] - temp_df['AQL date']).dt.days
 
-# 2. Тепер рахуємо ймовірність (твій рядок 164 тепер запрацює)
-prob_df = temp_df[temp_df['cycle_days'] >= 0].groupby('cycle_days')['Is_Won'].mean().reset_index()
-prob_df['Is_Won'] *= 100 
+# Залишаємо тільки ті угоди, де є результат (Won або Lost)
+scatter_df = temp_df[temp_df['cycle_days'] >= 0].copy()
+scatter_df['Status'] = scatter_df['Is_Won'].apply(lambda x: 'Won' if x == 1 else 'Lost')
 
-# 3. Малюємо графік
-fig_trend = px.area(prob_df, x='cycle_days', y='Is_Won', title='Шанс на успіх від тривалості')
-st.plotly_chart(fig_trend, use_container_width=True)
+# 2. Малюємо Scatter Plot
+fig_scatter = px.scatter(
+    scatter_df, 
+    x='cycle_days', 
+    y='Status', 
+    color='Status',
+    color_discrete_map={'Won': '#00CC96', 'Lost': '#EF553B'},
+    title='Розподіл угод: Шлях до успіху vs Час',
+    labels={'cycle_days': 'Дні від AQL до закриття', 'Status': 'Результат'},
+    opacity=0.6,
+    hover_data=['Client country', 'cycle_days'] # додаємо деталі при наведенні
+)
 
+# Додаємо "jitter" (зміщення), щоб бачити густоту точок
+fig_scatter.update_traces(marker=dict(size=10))
+
+# Додаємо наші лінії-орієнтири
+fig_scatter.add_vline(x=16, line_dash="dot", line_color="green", annotation_text="Avg (16d)")
+fig_scatter.add_vline(x=19, line_dash="dash", line_color="red", annotation_text="Stagnation (19d)")
+
+# Обмежуємо вісь X, щоб не дивитися на "хвости" (наприклад, до 60 днів)
+fig_scatter.update_xaxes(range=[0, 60])
+
+st.plotly_chart(fig_scatter, use_container_width=True)
 
 
 
@@ -400,6 +420,7 @@ if recoms:
 else:
 
     st.write("✅ Всі ключові показники в нормі. Дані чисті, конверсія стабільна.")
+
 
 
 
