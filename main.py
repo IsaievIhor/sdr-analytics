@@ -160,17 +160,19 @@ st.divider()
 with st.expander("Переглянути сирі дані"):
     st.write(filtered_df)
 
-# Групуємо дані, щоб побачити ймовірність успіху залежно від тривалості
+# 1. Створюємо тимчасовий датафрейм (це виправить NameError)
+temp_df = filtered_df.copy()
+temp_df['AQL date'] = pd.to_datetime(temp_df['AQL date'], errors='coerce')
+temp_df['Closing Date'] = pd.to_datetime(temp_df['Closing Date'], errors='coerce')
+temp_df['cycle_days'] = (temp_df['Closing Date'] - temp_df['AQL date']).dt.days
+
+# 2. Тепер рахуємо ймовірність (твій рядок 164 тепер запрацює)
 prob_df = temp_df[temp_df['cycle_days'] >= 0].groupby('cycle_days')['Is_Won'].mean().reset_index()
+prob_df['Is_Won'] *= 100 
 
-fig_trend = px.line(prob_df, x='cycle_days', y='Is_Won', 
-                    title='Ймовірність закриття угоди від її тривалості',
-                    labels={'cycle_days': 'Тривалість угоди (дні)', 'Is_Won': 'Шанс на перемогу (%)'})
-
-# Додаємо "червону лінію" на 19 днях
-fig_trend.add_vline(x=19, line_dash="dash", line_color="red", annotation_text="Зона ризику (19 днів)")
-
-st.plotly_chart(fig_trend)
+# 3. Малюємо графік
+fig_trend = px.area(prob_df, x='cycle_days', y='Is_Won', title='Шанс на успіх від тривалості')
+st.plotly_chart(fig_trend, use_container_width=True)
 
 
 
@@ -398,6 +400,7 @@ if recoms:
 else:
 
     st.write("✅ Всі ключові показники в нормі. Дані чисті, конверсія стабільна.")
+
 
 
 
