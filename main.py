@@ -156,6 +156,19 @@ fig_budget.update_layout(showlegend=False)
 st.plotly_chart(fig_budget, use_container_width=True)
 st.divider()
 
+# Групуємо дані, щоб побачити ймовірність успіху залежно від тривалості
+prob_df = temp_df[temp_df['cycle_days'] >= 0].groupby('cycle_days')['Is_Won'].mean().reset_index()
+
+fig_trend = px.line(prob_df, x='cycle_days', y='Is_Won', 
+                    title='Ймовірність закриття угоди від її тривалості',
+                    labels={'cycle_days': 'Тривалість угоди (дні)', 'Is_Won': 'Шанс на перемогу (%)'})
+
+# Додаємо "червону лінію" на 19 днях
+fig_trend.add_vline(x=19, line_dash="dash", line_color="red", annotation_text="Зона ризику (19 днів)")
+
+st.plotly_chart(fig_trend)
+st.divider()
+
 # 5. Таблиця даних (опціонально)
 with st.expander("Переглянути сирі дані"):
     st.write(filtered_df)
@@ -384,4 +397,5 @@ if recoms:
 else:
 
     st.write("✅ Всі ключові показники в нормі. Дані чисті, конверсія стабільна.")
+
 
